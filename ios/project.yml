@@ -9,12 +9,22 @@ configs:
   Debug: debug
   Release: release
 
+packages:
+  VisionAssistCore:
+    path: ../core/VisionAssistCore
+
 targets:
   VisionAssist:
     type: application
     platform: iOS
     sources:
       - path: VisionAssist
+      - path: ../model/weights/train11-yolov8n-seg-640.mlpackage
+    dependencies:
+      - package: VisionAssistCore
+        product: Masking
+      - package: VisionAssistCore
+        product: YOLODecoding
     configFiles:
       Debug: Local.xcconfig
       Release: Local.xcconfig
