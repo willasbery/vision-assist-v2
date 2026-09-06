@@ -1,0 +1,9 @@
+// Copy to Local.xcconfig and fill in your team ID.
+// Local.xcconfig is gitignored — it identifies your developer account.
+//
+// Find your team ID with:
+//   security find-certificate -c "Apple Development: <your email>" -p \
+//     | openssl x509 -noout -subject
+// The OU field is the team ID.
+DEVELOPMENT_TEAM = ABCDE12345
+CODE_SIGN_STYLE = Automatic

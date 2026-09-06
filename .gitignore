@@ -21,3 +21,5 @@ xcuserdata/
 .DS_Store
 
 model/.venv/
+ios/VisionAssist.xcodeproj/
+ios/Local.xcconfig
