@@ -1,0 +1,28 @@
+{
+  "source_frame": "image_0142_png_jpg.rf.3ab34d8e2d7b3db811e2337a21e83f42.jpg",
+  "model": "train11-yolov8n-seg-640.mlpackage",
+  "detections": {
+    "file": "detections.bin",
+    "rows": 300,
+    "columns": 38
+  },
+  "prototypes": {
+    "file": "prototypes.bin",
+    "count": 32,
+    "size": 160
+  },
+  "expected_mask": {
+    "file": "expected_mask.bin",
+    "size": 160,
+    "filled": 6218
+  },
+  "confidence_threshold": 0.5,
+  "mask_threshold": 0.5,
+  "expected_box": {
+    "x1": 123.25,
+    "y1": 351.75,
+    "x2": 639.0,
+    "y2": 639.5
+  },
+  "expected_confidence": 0.95556640625
+}
