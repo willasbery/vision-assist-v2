@@ -19,3 +19,5 @@ xcuserdata/
 
 # macOS
 .DS_Store
+
+model/.venv/
