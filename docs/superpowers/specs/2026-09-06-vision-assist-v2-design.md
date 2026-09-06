@@ -91,19 +91,30 @@ stage's output to JSON in `fixtures/`. Swift tests assert the port reproduces
 them stage by stage. Parity is established per stage as it is ported, not at
 the end.
 
-Two bugs in the reference must be fixed before it can serve as an oracle,
-otherwise the port would faithfully reproduce wrong behaviour:
+Bugs in the reference must be fixed before it can serve as an oracle,
+otherwise the port would faithfully reproduce wrong behaviour.
 
-1. **Angle-cache unit mismatch** (`PathFinder.py:118-121`). Cache misses append
-   degrees; the value stored is radians. Since the cache is deliberately never
-   cleared between frames, the A* smoothness penalty collapses to near-zero for
-   any vector pair seen before.
-2. **O(n²) A* reconstruction** (`PathFinder.py:170-175`). The entire `came_from`
-   chain is re-walked for every neighbour of every expanded node — identical
-   work for all four neighbours. Tracking direction-of-arrival in a parallel
-   buffer makes the angle penalty O(1) per expansion.
+**Fixed.** *Angle-cache unit mismatch* (`PathFinder._angle_between_grids`).
+Cache misses appended degrees while the value stored was radians. Since the
+cache is deliberately never cleared between frames, the A* smoothness penalty
+collapsed to roughly 1/57th of its intended value for any vector pair seen
+before. Covered by `test_angle_is_stable_across_repeated_calls`.
 
-Both are fixed when that stage is reached, not up front.
+**Fixed, but smaller than expected.** The `came_from` chain was re-walked for
+every neighbour of every expanded node, which is identical work for all four.
+Lifting it out of the loop is safe — any ancestor of the current node is
+already closed, so it cannot be rewritten mid-loop — but it turned out to be
+worth well under 1% on a representative 40x25 obstructed field (34.1ms to
+33.9ms per call).
+
+**Open, needs a decision.** Profiling shows `_angle_between_grids` is ~70% of
+`find_path`. It rescans the path from the start on every neighbour expansion
+and returns the `max` angle change over the whole history, so cost grows with
+path length and a single sharp turn penalises every subsequent expansion for
+the rest of the route. Restricting the window to the tail of the path would
+make it O(1) per expansion, but it changes the cost function and therefore the
+routes chosen. That is a design decision for the port, not a refactor, and is
+deferred to the pathfinding milestone.
 
 ## Milestone 1
 
