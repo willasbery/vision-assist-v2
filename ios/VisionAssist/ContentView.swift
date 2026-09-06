@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var camera = CameraController()
+    @StateObject private var segmentation = SegmentationViewModel()
 
     var body: some View {
         ZStack {
@@ -10,6 +11,8 @@ struct ContentView: View {
             switch camera.state {
             case .running:
                 CameraPreviewView(session: camera.session)
+                    .overlay(MaskOverlayView(mask: segmentation.mask))
+                    .overlay(alignment: .top) { readout }
                     .ignoresSafeArea()
             case .denied:
                 message("Camera access is off. Turn it on in Settings to use Vision Assist.")
@@ -19,8 +22,23 @@ struct ContentView: View {
                 ProgressView()
             }
         }
-        .task { await camera.start() }
+        .task {
+            camera.onFrame = { [weak segmentation] frame in
+                segmentation?.process(frame)
+            }
+            await camera.start()
+        }
         .onDisappear { camera.stop() }
+    }
+
+    private var readout: some View {
+        Text(segmentation.failure ?? String(format: "%.0f ms", segmentation.milliseconds))
+            .font(.system(.caption, design: .monospaced))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.black.opacity(0.6), in: Capsule())
+            .padding(.top, 60)
     }
 
     private func message(_ text: String) -> some View {
