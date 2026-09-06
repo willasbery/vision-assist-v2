@@ -9,11 +9,16 @@ struct MaskOverlayView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            if let image = mask.flatMap(Self.image(from:)) {
+            if let mask, let image = Self.image(from: mask) {
+                // The preview layer uses .resizeAspectFill, so the overlay has
+                // to crop the same way or the two will not line up.
                 Image(decorative: image, scale: 1)
                     .resizable()
                     .interpolation(.none)
+                    .aspectRatio(CGFloat(mask.width) / CGFloat(mask.height),
+                                 contentMode: .fill)
                     .frame(width: geometry.size.width, height: geometry.size.height)
+                    .clipped()
                     .colorMultiply(tint)
                     .allowsHitTesting(false)
             }

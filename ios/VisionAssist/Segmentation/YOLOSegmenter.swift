@@ -30,9 +30,11 @@ final class YOLOSegmenter: PavementSegmenter {
 
     func mask(from frame: CVPixelBuffer) throws -> Mask? {
         let request = VNCoreMLRequest(model: model)
-        // The training data was resized to 640x640 by stretching, so match it.
-        // This also makes the mapping back to frame space a plain linear scale.
-        request.imageCropAndScaleOption = .scaleFill
+        // Letterbox rather than stretch. Squashing a portrait frame into the
+        // square input distorts it far beyond anything in the training set:
+        // measured on recorded frames, the same scene scores 0.008 stretched
+        // and 0.845 letterboxed.
+        request.imageCropAndScaleOption = .scaleFit
 
         try VNImageRequestHandler(cvPixelBuffer: frame, orientation: .up).perform([request])
 
@@ -49,12 +51,24 @@ final class YOLOSegmenter: PavementSegmenter {
             throw SegmenterError.unexpectedOutputs
         }
 
-        return decoder.decode(
+        guard let mask = decoder.decode(
             detections: try floats(from: detections),
             rows: detections.shape[1].intValue,
             columns: detections.shape[2].intValue,
             prototypes: try floats(from: prototypes)
+        ) else {
+            return nil
+        }
+
+        // Discard the letterbox padding, so the mask lines up with the frame
+        // rather than with the model's square input.
+        let geometry = LetterboxGeometry(
+            sourceWidth: CVPixelBufferGetWidth(frame),
+            sourceHeight: CVPixelBufferGetHeight(frame),
+            inputSize: decoder.configuration.inputSize,
+            maskSize: decoder.configuration.prototypeSize
         )
+        return mask.cropped(to: geometry.contentRect)
     }
 
     private func floats(from array: MLMultiArray) throws -> [Float] {

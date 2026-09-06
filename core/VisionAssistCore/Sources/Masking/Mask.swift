@@ -32,4 +32,22 @@ public struct Mask: Sendable, Equatable {
     }
 
     public var isEmpty: Bool { filledCount == 0 }
+
+    /// The sub-region `rect` as a mask in its own right.
+    ///
+    /// Used to discard letterbox padding, so the returned mask lines up with
+    /// the source image rather than with the model's square input.
+    public func cropped(to rect: MaskRect) -> Mask {
+        precondition(rect.x >= 0 && rect.y >= 0, "crop origin must be non-negative")
+        precondition(rect.x + rect.width <= width && rect.y + rect.height <= height,
+                     "crop must lie within the mask")
+
+        var cropped = [UInt8]()
+        cropped.reserveCapacity(rect.width * rect.height)
+        for row in rect.y..<(rect.y + rect.height) {
+            let start = row * width + rect.x
+            cropped.append(contentsOf: values[start..<(start + rect.width)])
+        }
+        return Mask(width: rect.width, height: rect.height, values: cropped)
+    }
 }
