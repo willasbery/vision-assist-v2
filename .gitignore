@@ -1,0 +1,21 @@
+# Dataset — fetched separately, see model/
+model/dataset/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Swift / Xcode
+.build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.swiftpm/
+
+# Core ML build artifacts
+*.mlmodelc
+
+# macOS
+.DS_Store
