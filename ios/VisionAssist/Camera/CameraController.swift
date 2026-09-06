@@ -23,6 +23,13 @@ final class CameraController: ObservableObject {
     private let queue = DispatchQueue(label: "com.willasbery.visionassist.session")
     private var isConfigured = false
 
+    private let videoOutput = AVCaptureVideoDataOutput()
+    private let videoQueue = DispatchQueue(label: "com.willasbery.visionassist.video")
+    private var frameStream: FrameStream?
+
+    /// Set before `start()`. Called on the video queue, never the main thread.
+    var onFrame: ((CVPixelBuffer) -> Void)?
+
     func start() async {
         guard await isAuthorised() else {
             state = .denied
@@ -68,6 +75,7 @@ final class CameraController: ObservableObject {
     private enum ConfigurationError: Error {
         case noCamera
         case cannotAddInput
+        case cannotAddOutput
     }
 
     private func configure() throws {
@@ -87,5 +95,28 @@ final class CameraController: ObservableObject {
             throw ConfigurationError.cannotAddInput
         }
         session.addInput(input)
+
+        let stream = FrameStream { [weak self] buffer in
+            self?.onFrame?(buffer)
+        }
+        frameStream = stream
+
+        videoOutput.alwaysDiscardsLateVideoFrames = true
+        videoOutput.videoSettings = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+        ]
+        videoOutput.setSampleBufferDelegate(stream, queue: videoQueue)
+
+        guard session.canAddOutput(videoOutput) else {
+            throw ConfigurationError.cannotAddOutput
+        }
+        session.addOutput(videoOutput)
+
+        // Buffers arrive in the sensor's landscape orientation; the app is
+        // portrait-only, so rotate them to match what the preview shows.
+        if let connection = videoOutput.connection(with: .video),
+           connection.isVideoRotationAngleSupported(90) {
+            connection.videoRotationAngle = 90
+        }
     }
 }
